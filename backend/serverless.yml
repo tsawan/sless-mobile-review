@@ -1,0 +1,228 @@
+service:
+  name: serverless-mobile-review-app
+
+plugins:
+  - serverless-webpack
+  - serverless-iam-roles-per-function
+  - serverless-reqvalidator-plugin
+  - serverless-aws-documentation
+
+package:
+  individually: true 
+
+provider:
+  tracing:
+    lambda: true 
+    apiGateway: true 
+    
+  name: aws
+  runtime: nodejs12.x
+
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+
+  environment:
+    REVIEWS_TABLE: Reviews-${self:provider.stage}
+    USER_ID_INDEX: Reviews-uid-ndx-${self:provider.stage}
+    IMAGES_S3_BUCKET: reviews-tsawan-bucket-${self:provider.stage}
+    SIGNED_URL_EXPIRATION: 4200
+
+custom:
+  documentation:
+    api:
+      info:
+        version: v1.0.0
+        title: Review API
+        description: Serverless application for Mobile Reviews
+    models:
+      - name: CreateReviewRequest
+        contentType: application/json
+        schema: ${file(models/create-review-request.json)}
+      - name: UpdateReviewRequest
+        contentType: application/json
+        schema: ${file(models/update-review-request.json)}
+    
+functions:
+
+  Auth:
+    handler: src/lambda/auth/auth0Authorizer.handler
+
+  GetReviews:
+    handler: src/lambda/http/getReviews.handler
+    events:
+      - http:
+          method: GET
+          path: reviews/
+          authorizer: Auth
+          cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/*"   
+        
+  CreateReview:
+    handler: src/lambda/http/createReview.handler
+    events:
+      - http:
+          method: POST
+          path: reviews
+          authorizer: Auth
+          cors: true
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Create a new Review
+            description: Create a new Review
+            requestModels:
+              'application/json': CreateReviewRequest
+
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REVIEWS_TABLE}"
+
+  UpdateReview:
+    handler: src/lambda/http/updateReview.handler
+    events:
+      - http:
+          method: PATCH
+          path: reviews/{reviewId}
+          authorizer: Auth
+          cors: true
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Update a review
+            description: Update a review
+            requestModels:
+              'application/json': UpdateReviewRequest
+
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REVIEWS_TABLE}"
+        
+  DeleteReview:
+    handler: src/lambda/http/deleteReview.handler
+    events:
+      - http:
+          method: DELETE
+          path: reviews/{reviewId}
+          authorizer: Auth
+          cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REVIEWS_TABLE}"
+        
+  GenerateUploadUrl:
+    handler: src/lambda/http/generateUploadUrl.handler
+    events:
+      - http:
+          method: POST
+          path: reviews/{reviewId}/attachment
+          authorizer: Auth
+          cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+  #        - s3:GetObject
+        Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*    
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REVIEWS_TABLE}"
+          
+resources:
+  Resources:
+
+    GatewayResponseDefault4XX:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS,POST,PUT,DELETE'"
+        ResponseType: DEFAULT_4XX
+        RestApiId:
+          Ref: ApiGatewayRestApi
+
+    ReviewsTable:
+          Type: AWS::DynamoDB::Table
+          Properties:
+            AttributeDefinitions:
+              - AttributeName: userId
+                AttributeType: S
+              - AttributeName: createdAt
+                AttributeType: S
+              - AttributeName: reviewId
+                AttributeType: S
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+              - AttributeName: reviewId
+                KeyType: RANGE
+            BillingMode: PAY_PER_REQUEST
+            TableName: ${self:provider.environment.REVIEWS_TABLE}
+            GlobalSecondaryIndexes:
+              - IndexName: ${self:provider.environment.USER_ID_INDEX}
+                KeySchema:
+                  - AttributeName: userId
+                    KeyType: HASH
+                  - AttributeName: createdAt
+                    KeyType: RANGE
+                Projection:
+                  ProjectionType: ALL
+    RequestBodyValidator:
+      Type: AWS::ApiGateway::RequestValidator
+      Properties:
+        Name: 'request-body-validator'
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ValidateRequestBody: true
+        ValidateRequestParameters: false
+
+    AttachmentsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.IMAGES_S3_BUCKET}
+        CorsConfiguration:
+          CorsRules:
+            -
+              AllowedOrigins:
+                - '*'
+              AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              MaxAge: 30000
+
+    BucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        PolicyDocument:
+          Id: MyPolicy
+          Version: "2012-10-17"
+          Statement:
+            - Sid: PublicReadForGetBucketObjects
+              Effect: Allow
+              Principal: '*'
+              Action: 's3:GetObject'
+              Resource: 'arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*'
+        Bucket: !Ref AttachmentsBucket
+
+
+
+    
