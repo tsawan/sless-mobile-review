@@ -1,18 +1,22 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "todo",
+    "title": "review",
     "type": "object",
     "properties": {
-        "name": {
+        "review": {
             "type": "string"
         },
-        "dueDate": {
+        "range": {
             "type": "string"
+        },
+        "price": {
+            "type": "number"
         }
     },
     "required": [
-        "name",
-        "dueDate"
+        "review",
+        "range",
+        "price"
     ],
     "additionalProperties": false
 }

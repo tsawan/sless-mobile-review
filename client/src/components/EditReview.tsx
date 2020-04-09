@@ -1,7 +1,8 @@
-import * as React from 'react'
-import { Form, Button } from 'semantic-ui-react'
-import Auth from '../auth/Auth'
-import { getUploadUrl, uploadFile } from '../api/reviews-api'
+import * as React from "react";
+import { Form, Button } from "semantic-ui-react";
+import { getUploadUrl, uploadFile } from "../api/reviews-api";
+import { useState } from "react";
+import { useToast } from "@chakra-ui/core";
 
 enum UploadState {
   NoUpload,
@@ -9,102 +10,92 @@ enum UploadState {
   UploadingFile,
 }
 
-interface EditTodoProps {
-  match: {
-    params: {
-      todoId: string
-    }
-  }
-  auth: Auth
-}
+const EditReview = (props: any) => {
+  const toast = useToast();
+  const [file, setFile] = useState();
+  const [uploadState, setUploadState] = useState(UploadState.NoUpload);
 
-interface EditTodoState {
-  file: any
-  uploadState: UploadState
-}
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
 
-export class EditTodo extends React.PureComponent<
-  EditTodoProps,
-  EditTodoState
-> {
-  state: EditTodoState = {
-    file: undefined,
-    uploadState: UploadState.NoUpload
-  }
+    setFile(files[0]);
+  };
 
-  handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files
-    if (!files) return
-
-    this.setState({
-      file: files[0]
-    })
-  }
-
-  handleSubmit = async (event: React.SyntheticEvent) => {
-    event.preventDefault()
+  const handleSubmit = async (event: React.SyntheticEvent) => {
+    event.preventDefault();
 
     try {
-      if (!this.state.file) {
-        alert('File should be selected')
-        return
+      if (!file) {
+        toast({
+          title: "Error",
+          description: "No file selected",
+          status: "error",
+          duration: 4000,
+        });
+        return;
       }
 
-      this.setUploadState(UploadState.FetchingPresignedUrl)
-      const uploadUrl = await getUploadUrl(this.props.auth.getIdToken(), this.props.match.params.todoId)
+      setUploadState(UploadState.FetchingPresignedUrl);
+      const uploadUrl = await getUploadUrl(
+        props.auth.getIdToken(),
+        props.match.params.reviewId
+      );
 
-      this.setUploadState(UploadState.UploadingFile)
-      await uploadFile(uploadUrl, this.state.file)
+      setUploadState(UploadState.UploadingFile);
+      await uploadFile(uploadUrl, file);
 
-      alert('File was uploaded!')
+      toast({
+        title: "File Uploaded",
+        description: "File was uploaded successfully",
+        status: "success",
+        duration: 2000,
+      });
     } catch (e) {
-      alert('Could not upload a file: ' + e.message)
+      toast({
+        title: "Error",
+        description: "Could not upload a file: " + e.message,
+        status: "error",
+        duration: 4000,
+      });      
     } finally {
-      this.setUploadState(UploadState.NoUpload)
+      setUploadState(UploadState.NoUpload);
     }
-  }
+  };
 
-  setUploadState(uploadState: UploadState) {
-    this.setState({
-      uploadState
-    })
-  }
-
-  render() {
+  const renderButton = () => {
     return (
       <div>
-        <h1>Upload new image</h1>
-
-        <Form onSubmit={this.handleSubmit}>
-          <Form.Field>
-            <label>File</label>
-            <input
-              type="file"
-              accept="image/*"
-              placeholder="Image to upload"
-              onChange={this.handleFileChange}
-            />
-          </Form.Field>
-
-          {this.renderButton()}
-        </Form>
-      </div>
-    )
-  }
-
-  renderButton() {
-
-    return (
-      <div>
-        {this.state.uploadState === UploadState.FetchingPresignedUrl && <p>Uploading image metadata</p>}
-        {this.state.uploadState === UploadState.UploadingFile && <p>Uploading file</p>}
-        <Button
-          loading={this.state.uploadState !== UploadState.NoUpload}
-          type="submit"
-        >
+        {uploadState === UploadState.FetchingPresignedUrl && (
+          <p>Uploading image metadata</p>
+        )}
+        {uploadState === UploadState.UploadingFile && <p>Uploading file</p>}
+        <Button loading={uploadState !== UploadState.NoUpload} type="submit">
           Upload
         </Button>
       </div>
-    )
-  }
-}
+    );
+  };
+
+  return (
+    <div>
+      <h1>Upload new image</h1>
+
+      <Form onSubmit={handleSubmit}>
+        <Form.Field>
+          <label>File</label>
+          <input
+            type="file"
+            accept="image/*"
+            placeholder="Image to upload"
+            onChange={handleFileChange}
+          />
+        </Form.Field>
+
+        {renderButton()}
+      </Form>
+    </div>
+  );
+};
+
+export default EditReview;

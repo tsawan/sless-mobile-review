@@ -2,8 +2,8 @@
 
 import * as AWS from "aws-sdk";
 
-const AWSXRay = require("aws-xray-sdk");
-const XAWS = AWSXRay.captureAWS(AWS);
+//const AWSXRay = require("aws-xray-sdk");
+//const XAWS = AWSXRay.captureAWS(AWS);
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 
 import { Review } from "../models/Review";
@@ -13,7 +13,7 @@ import { UpdateReviewRequest } from "../requests/UpdateReviewRequest";
 
 const logger = createLogger("reviewDao");
 
-const docClient: DocumentClient = new XAWS.DynamoDB.DocumentClient();
+const docClient: DocumentClient = new AWS.DynamoDB.DocumentClient();
 const reviewsTable = process.env.REVIEWS_TABLE;
 
 export class ReviewDao {
@@ -68,7 +68,6 @@ export class ReviewDao {
           "#P": "price"
         },
         ExpressionAttributeValues: {
-          ":d": updatedReview.releaseDate,
           ":r": updatedReview.review,
           ":g": updatedReview.range,
           ":p": updatedReview.price

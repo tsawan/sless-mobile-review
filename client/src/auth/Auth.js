@@ -1,18 +1,14 @@
 import auth0 from 'auth0-js';
 import { authConfig } from '../config';
 
+const NO_AUTH = true;
+
 export default class Auth {
   accessToken;
   idToken;
   expiresAt;
+  auth0;
 
-  auth0 = new auth0.WebAuth({
-    domain: authConfig.domain,
-    clientID: authConfig.clientId,
-    redirectUri: authConfig.callbackUrl,
-    responseType: 'token id_token',
-    scope: 'openid'
-  });
 
   constructor(history) {
     this.history = history
@@ -24,13 +20,31 @@ export default class Auth {
     this.getAccessToken = this.getAccessToken.bind(this);
     this.getIdToken = this.getIdToken.bind(this);
     this.renewSession = this.renewSession.bind(this);
+
+    if (NO_AUTH) {
+      this.accessToken = "HRCTPyDoyz95Dkz41AUctM1YH7qiHv4k"
+      this.idToken = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlEwTTVPRFZGTVRBek5qbEZORU16UTBJM05UWkdOelJGTkRFMk1EUTFPRE14T0RGRE9EazVRdyJ9.eyJpc3MiOiJodHRwczovL3RhaGlyLXNsZXNzLmF1dGgwLmNvbS8iLCJzdWIiOiJnb29nbGUtb2F1dGgyfDExNDIzOTMxOTE0NTI4OTAzMzIzNSIsImF1ZCI6ImN3dlFaYUtSYUdjMmRQTUhiRTNEOWN4SmlMNkxOSnZiIiwiaWF0IjoxNTg2NDU3MDA2LCJleHAiOjE1ODY0OTMwMDYsImF0X2hhc2giOiI3dUlIWml4UXF4SndsdEM1ZmVxTUhnIiwibm9uY2UiOiI5MzJxeFN0bGh1QX5SYnAyUVlSYVRLVHlJMERpVWtDfiJ9.WJCiaZt3PsUFeYtqcnskv5gG8zr1Pa3VwZ3doArlDOVHgPA4dGDOwilcGV40cBP7LlkyE2O9Gn6Yd0sJI_pxhMAKv8tZEJEYm4l88WEk6S7PFUs3iF3mHwfuYMQ0Uey1_A8d77Wx1kMbuw7H3AupET2pn8UOt6Jg5prJ5vS5LqlYWOI93ZsRAB6fl0Y1ZGfaoqJ6zvZsCTp5st5vQ5_fxK7oDcBrKqV7-pxutQVIKmTxcQza4NHXJKTqHu03JskGkLenQ2qi4GwO_mDRAqqShQKkdY0sqaIGqUXxqlZXZeSKYoo0DlpJOHJVZcWaieYuF_QPsWyrx0H9ShBcRPdJsQ"
+    }
+    else {
+      this.auth0 = new auth0.WebAuth({
+        domain: authConfig.domain,
+        clientID: authConfig.clientId,
+        redirectUri: authConfig.callbackUrl,
+        responseType: 'token id_token',
+        scope: 'openid'
+      });
+    }
   }
 
   login() {
-    this.auth0.authorize();
+    if (!NO_AUTH) this.auth0.authorize();
   }
 
   handleAuthentication() {
+    if (NO_AUTH) {
+      this.setSession({})
+      return;
+    }
     this.auth0.parseHash((err, authResult) => {
       if (authResult && authResult.accessToken && authResult.idToken) {
         console.log('Access token: ', authResult.accessToken)
@@ -57,16 +71,23 @@ export default class Auth {
     localStorage.setItem('isLoggedIn', 'true');
 
     // Set the time that the access token will expire at
+    if (NO_AUTH) {
+      this.accessToken = "10WLCnWJ_CNeTngu3D3D7AJKIRn7lbpn"
+      this.idToken = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlEwTTVPRFZGTVRBek5qbEZORU16UTBJM05UWkdOelJGTkRFMk1EUTFPRE14T0RGRE9EazVRdyJ9.eyJpc3MiOiJodHRwczovL3RhaGlyLXNsZXNzLmF1dGgwLmNvbS8iLCJzdWIiOiJnb29nbGUtb2F1dGgyfDExNDIzOTMxOTE0NTI4OTAzMzIzNSIsImF1ZCI6ImN3dlFaYUtSYUdjMmRQTUhiRTNEOWN4SmlMNkxOSnZiIiwiaWF0IjoxNTg2NDIwNjQwLCJleHAiOjE1ODY0NTY2NDAsImF0X2hhc2giOiJrSmloZEFiLVhvWjJTUkdhYURJd0VRIiwibm9uY2UiOiJaVnc1TGdvOGJ3RUYxNHFVMElicWYxVn5PVkxDaHZaMyJ9.dWlkJGQ1A7WjPlmOb6q-M_hM_TNfpu9JYosUWALofmsW8o3A8nBHq5u_WqI-Q51J9iHyg6F7U-JKJIuII4dlq-h-kwt_-KO9_pDm3RWb1GMJLwwQ4HgY00cOFoaSy03YFYetp9A-y3yojkWXUWkv8yo_GetPZJ3hTcdkrh9TF782mP-XQEY2x2LlBk-5L1Cc5ZuJTf4zyfb2klv2M-KvcBVVP6Qi9pwcupah5uBA2Y9xRyWeHndJRCEacXwSb5SVkYe1JJGRjWJjMuZ8USDrjtdqWb3aEh6iSpgosZqm1JM4QVELkGTwFdJe14lKUdbsuAj1daZ_9SafWarPmq7mhw"
+  
+    }
+    else {
     let expiresAt = (authResult.expiresIn * 1000) + new Date().getTime();
     this.accessToken = authResult.accessToken;
     this.idToken = authResult.idToken;
     this.expiresAt = expiresAt;
-
+    }
     // navigate to the home route
     this.history.replace('/');
   }
 
   renewSession() {
+    console.log('called renewSession')
     this.auth0.checkSession({}, (err, authResult) => {
        if (authResult && authResult.accessToken && authResult.idToken) {
          this.setSession(authResult);
@@ -79,6 +100,8 @@ export default class Auth {
   }
 
   logout() {
+    if (NO_AUTH) return;
+
     // Remove tokens and expiry time
     this.accessToken = null;
     this.idToken = null;
@@ -98,6 +121,8 @@ export default class Auth {
   isAuthenticated() {
     // Check whether the current time is past the
     // access token's expiry time
+    if (NO_AUTH) return true;
+
     let expiresAt = this.expiresAt;
     return new Date().getTime() < expiresAt;
   }

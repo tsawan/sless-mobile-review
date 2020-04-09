@@ -3,7 +3,7 @@ service:
 
 plugins:
   - serverless-webpack
-#  - serverless-iam-roles-per-function
+  - serverless-iam-roles-per-function
   - serverless-reqvalidator-plugin
   - serverless-aws-documentation
 
@@ -26,27 +26,6 @@ provider:
     USER_ID_INDEX: Reviews-uid-ndx-${self:provider.stage}
     IMAGES_S3_BUCKET: reviews-tsawan-bucket-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 4200
-
-  iamRoleStatements:	
-  - Effect: Allow	
-    Action:	
-      - s3:PutObject	
-      - s3:GetObject	
-    Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*    	
-  - Effect: Allow	
-    Action:	
-      - dynamodb:Query	
-      - dynamodb:Scan	
-      - dynamodb:GetItem	
-      - dynamodb:PutItem	
-      - dynamodb:UpdateItem	
-      - dynamodb:DeleteItem	
-    Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REVIEWS_TABLE}"	
-  - Effect: Allow	
-    Action:	
-      - dynamodb:Query	
-      - dynamodb:Scan	
-    Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REVIEWS_TABLE}/index/*"  
 
 custom:
   documentation:
@@ -76,6 +55,15 @@ functions:
           path: reviews/
           authorizer: Auth
           cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REVIEWS_TABLE}"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REVIEWS_TABLE}/index/*"   
         
   CreateReview:
     handler: src/lambda/http/createReview.handler
@@ -92,6 +80,12 @@ functions:
             requestModels:
               'application/json': CreateReviewRequest
 
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REVIEWS_TABLE}"
+
   UpdateReview:
     handler: src/lambda/http/updateReview.handler
     events:
@@ -107,6 +101,12 @@ functions:
             requestModels:
               'application/json': UpdateReviewRequest
 
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REVIEWS_TABLE}"
+        
   DeleteReview:
     handler: src/lambda/http/deleteReview.handler
     events:
@@ -115,6 +115,11 @@ functions:
           path: reviews/{reviewId}
           authorizer: Auth
           cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REVIEWS_TABLE}"
         
   GenerateUploadUrl:
     handler: src/lambda/http/generateUploadUrl.handler
@@ -124,6 +129,17 @@ functions:
           path: reviews/{reviewId}/attachment
           authorizer: Auth
           cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+          - s3:GetObject
+        Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*    
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REVIEWS_TABLE}"
           
 resources:
   Resources:

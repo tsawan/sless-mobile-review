@@ -1,0 +1,34 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "review",
+    "type": "object",
+    "properties": {
+        "review": {
+            "type": "string"
+        },
+        "title": {
+            "type": "string"
+        },
+        "brand": {
+            "type": "string"
+        },
+        "releaseDate": {
+            "type": "string"
+        },
+        "range": {
+            "type": "string"
+        },
+        "price": {
+            "type": "number"
+        }
+    },
+    "required": [
+        "review",
+        "releaseDate",
+        "range",
+        "title",
+        "brand",
+        "price"
+    ],
+    "additionalProperties": false
+}

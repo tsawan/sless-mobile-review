@@ -1,11 +1,10 @@
 {
-  "name": "serverless-todo-app",
+  "name": "serverless-mobile-review-app",
   "version": "1.0.0",
-  "description": "Serverless TODO image app",
+  "description": "Serverless Mobile Review app",
   "dependencies": {
     "@types/axios": "^0.14.0",
     "@types/http-errors": "^1.6.1",
-    "aws-xray-sdk": "^2.2.0",
     "axios": "^0.18.0",
     "http-errors": "^1.7.2",
     "jsonwebtoken": "^8.5.1",
@@ -22,6 +21,7 @@
     "aws-sdk": "^2.433.0",
     "serverless-aws-documentation": "^1.1.0",
     "serverless-iam-roles-per-function": "^1.0.4",
+    "serverless-jetpack": "^0.10.1",
     "serverless-plugin-canary-deployments": "^0.4.7",
     "serverless-reqvalidator-plugin": "^1.0.3",
     "serverless-webpack": "^5.2.0",
@@ -29,6 +29,6 @@
     "typescript": "^3.4.1",
     "webpack": "^4.29.6"
   },
-  "author": "Ivan Mushketyk",
+  "author": "Tahir Awan",
   "license": "MIT"
 }
