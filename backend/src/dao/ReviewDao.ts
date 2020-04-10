@@ -62,7 +62,6 @@ export class ReviewDao {
           reviewId
         },
         ExpressionAttributeNames: {
-          "#D": "releasedDate",
           "#R": "review",
           "#G": "range",
           "#P": "price"
@@ -72,7 +71,7 @@ export class ReviewDao {
           ":g": updatedReview.range,
           ":p": updatedReview.price
         },
-        UpdateExpression: "SET #D = :d, #R = :r, #G = :g, #P = :p",
+        UpdateExpression: "SET #R = :r, #G = :g, #P = :p",
         ReturnValues: "ALL_NEW"
       })
       .promise();
