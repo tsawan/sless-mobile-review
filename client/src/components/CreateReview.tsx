@@ -1,27 +1,20 @@
 import React from "react";
 
-import { Formik, Field, Form, useField, ErrorMessage } from "formik";
-import styled from "@emotion/styled";
+import { Formik, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { Box, Flex, Grid, Divider, Image, useToast } from "@chakra-ui/core";
+import { Box, Flex, Grid, Text, useToast, Heading, Button } from "@chakra-ui/core";
 import dateFormat from "dateformat";
-import { useState } from "react";
-import { useHistory } from "react-router-dom";
 
 import { createReview } from "../api/reviews-api";
 
-import Auth from "../auth/Auth";
-import { Review } from "../types/Review";
 import { CreateReviewRequest } from "../types/CreateReviewRequest";
+
+import { showError } from '../Utils';
 
 const CreateReview = (props: any) => {
   const toast = useToast();
-  const history = useHistory();
 
-  const onReviewCreate = async (
-    req: CreateReviewRequest,
-    toast: any
-  ) => {
+  const onReviewCreate = async (req: CreateReviewRequest, toast: any) => {
     try {
       const newReview = await createReview(getToken(), req);
       toast({
@@ -32,7 +25,12 @@ const CreateReview = (props: any) => {
       });
       return newReview;
     } catch {
-      alert("Review creation failed");
+      toast({
+        title: "Create failed",
+        description: "Mobile review creation failed",
+        status: "error",
+        duration: 4000,
+      });
     }
   };
 
@@ -79,12 +77,9 @@ const CreateReview = (props: any) => {
                 req.review = values.review;
                 req.title = values.title;
                 req.releaseDate = calculateReleaseDate();
-                const newReview = await onReviewCreate(req, toast);
-                //const updatedReviews:any = [...reviews, newReview]
-                //setReviews(updatedReviews);
+                await onReviewCreate(req, toast);
 
                 resetForm({});
-                //setSubmitting(false);
               }, 400);
             }}
           >
@@ -104,13 +99,14 @@ const CreateReview = (props: any) => {
                     templateColumns="repeat(auto-fit, minmax(300px, 1fr))"
                     gap={2}
                   >
+                    <Heading>Create new Mobile Review</Heading>
                     <label htmlFor="title">Review Title</label>
                     <Field name="title" type="text" value={values.title} />
-                    <ErrorMessage name="title" />
+                    <ErrorMessage name="title" render={showError} />
 
                     <label htmlFor="review">Brief Review</label>
-                    <Field as="textarea" name="review" value={values.review} />
-                    <ErrorMessage name="review" />
+                    <Field as="textarea" rows="4" name="review" value={values.review} />
+                    <ErrorMessage name="review" render={showError} />
 
                     <label htmlFor="brand">Brand</label>
                     <Field as="select" name="brand" value={values.brand}>
@@ -120,7 +116,7 @@ const CreateReview = (props: any) => {
                       <option>LG</option>
                       <option>Nokia</option>
                     </Field>
-                    <ErrorMessage name="brand" />
+                    <ErrorMessage name="brand" render={showError} />
 
                     <label htmlFor="range">Range</label>
                     <Field name="range" as="select" value={values.range}>
@@ -128,13 +124,13 @@ const CreateReview = (props: any) => {
                       <option>Mid</option>
                       <option>High</option>
                     </Field>
-                    <ErrorMessage name="range" />
+                    <ErrorMessage name="range" render={showError} />
 
                     <label htmlFor="price">Price</label>
                     <Field name="price" value={values.price} />
-                    <ErrorMessage name="price" />
+                    <ErrorMessage name="price" render={showError} />
 
-                    <button type="submit">Save Review</button>
+                    <Button type="submit" variantColor="green">Save Review</Button>
                   </Grid>
                 </Box>
               </form>

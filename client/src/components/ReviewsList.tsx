@@ -4,6 +4,7 @@ import { History } from "history";
 import { useState, useEffect } from "react";
 import { useHistory } from "react-router-dom";
 import dateFormat from "dateformat";
+import SelectedReview from './SelectedReview';
 
 import {
   Box,
@@ -17,6 +18,8 @@ import {
   Heading,
   Icon,
   IconButton,
+  Button,
+  Text
 } from "@chakra-ui/core";
 
 import { deleteReview, getReviews, patchReview } from "../api/reviews-api";
@@ -59,14 +62,24 @@ const ReviewsList = (props: any) => {
         setReviews(_reviews);
         setLoading(false);
       } catch (e) {
-        alert(`Failed to fetch reviews: ${e.message}`);
-      }
+        toast({
+          title: "Error loading",
+          description: "Error loading Mobile reviews",
+          status: "error",
+          duration: 4000,
+        });
+        }
     };
     _getReviews();
   }, []);
 
-  const onEditButtonClick = (reviewId: string) => {
-    history.push(`/reviews/${reviewId}/edit`);
+  const onEditButtonClick = (review: Review, context:any) => {
+    context.set(review);
+    history.push(`/reviews/${review.reviewId}/edit`);
+  };
+
+  const onAttachButtonClick = (reviewId: string) => {
+    history.push(`/reviews/${reviewId}/attach`);
   };
 
   const onCreateButtonClick = () => {
@@ -91,45 +104,35 @@ const ReviewsList = (props: any) => {
         duration: 2000,
       });
     } catch {
-      alert("Review deletion failed");
+      toast({
+        title: "Delete failed",
+        description: "Mobile review deletion failed",
+        status: "error",
+        duration: 4000,
+      });
     }
   };
 
-  const renderReviews = () => {
+  const renderReviews = (context:any) => {
     if (loading) {
       return renderLoading();
     }
 
-    return renderReviewsList(reviews);
+    return renderReviewsList(reviews, context);
   };
 
   const renderLoading = () => {
     return <Box>Loading Reviews</Box>;
   };
 
-  const onReviewCheck = async (pos: number) => {
-    try {
-      const review: Review = reviews[pos];
-      await patchReview(getToken(), review.reviewId, {
-        range: review.range,
-        price: review.price,
-        review: review.review,
-      });
-      //update(reviews, {[pos]: {}})
-      //setReviews([]);
-    } catch {
-      alert("Review update failed");
-    }
-  };
-
-  const renderReviewsList = (reviews: Review[]) => {
+  const renderReviewsList = (reviews: Review[], context:any) => {
     return (
       <Grid>
         {reviews.map((review, pos) => {
           return (
             <Box key={review.reviewId}>
               <Stack isInline>
-                <Box>
+                <Box width="80%">
                   <Stack isInline>
                     <Heading fontSize="xl">{review.title}</Heading>
                     
@@ -137,7 +140,7 @@ const ReviewsList = (props: any) => {
                       aria-label="Edit"
                       icon="edit"
                       variantColor="blue"
-                      onClick={() => onEditButtonClick(review.reviewId)}
+                      onClick={() => onEditButtonClick(review, context)}
                     >
                       Edit
                     </IconButton>
@@ -145,7 +148,7 @@ const ReviewsList = (props: any) => {
                       aria-label="Upload photo"
                       variantColor="green"
                       icon="attachment"
-                      onClick={() => onEditButtonClick(review.reviewId)}
+                      onClick={() => onAttachButtonClick(review.reviewId)}
                     />
                     <IconButton
                       aria-label="Delete"
@@ -161,14 +164,16 @@ const ReviewsList = (props: any) => {
                   <Box>
                     Released On <b>{dateFormat(review.releaseDate, "yyyy-mm-dd")}</b>
                   </Box>
-                  <Box width="90%" backgroundColor="lightgoldenrodyellow">
+                  <Box backgroundColor="lightgoldenrodyellow">
                     <br/>{review.review}<br/><br/>
                   </Box>
                   <Box >
                     Price <b>$ {review.price}</b>  ({review.range} Range)
                   </Box>
                 </Box>
+                <Box width="20%">
                 {review.photoUrl && <Image src={review.photoUrl} />}
+                </Box>
               </Stack>
               <Divider />
             </Box>
@@ -179,18 +184,22 @@ const ReviewsList = (props: any) => {
   };
 
   return (
+    <SelectedReview.Consumer>
+      {context => (
     <div>
       <Stack isInline>
       <h1>Mobile Reviews</h1>
       <Box width="100px"></Box>
-      <button 
-        color="blue"
-        onClick={() => onCreateButtonClick()}>Create new Review</button>
+      <Button 
+        variantColor="green"
+        onClick={() => onCreateButtonClick()}>Create new Review</Button>
       </Stack>
       <Divider />
 
-      {renderReviews()}
+      {renderReviews(context)}
     </div>
+      )}
+    </SelectedReview.Consumer>
   );
 };
 

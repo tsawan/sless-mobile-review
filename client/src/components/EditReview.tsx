@@ -1,100 +1,141 @@
-import * as React from "react";
-import { Form, Button } from "semantic-ui-react";
-import { getUploadUrl, uploadFile } from "../api/reviews-api";
-import { useState } from "react";
-import { useToast } from "@chakra-ui/core";
+import React from "react";
 
-enum UploadState {
-  NoUpload,
-  FetchingPresignedUrl,
-  UploadingFile,
-}
+import { Formik, Field, ErrorMessage } from "formik";
+import styled from "@emotion/styled";
+import * as Yup from "yup";
+import {
+  Box,
+  Flex,
+  Grid,
+  useToast,
+  Heading,
+  Button,
+  Text
+} from "@chakra-ui/core";
+import { useHistory } from "react-router-dom";
+import SelectedReview from "./SelectedReview";
+
+import { patchReview } from "../api/reviews-api";
+
+import { showError } from "../Utils";
+
+import { UpdateReviewRequest } from "../types/UpdateReviewRequest";
 
 const EditReview = (props: any) => {
   const toast = useToast();
-  const [file, setFile] = useState();
-  const [uploadState, setUploadState] = useState(UploadState.NoUpload);
+  const history = useHistory();
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
-
-    setFile(files[0]);
-  };
-
-  const handleSubmit = async (event: React.SyntheticEvent) => {
-    event.preventDefault();
-
+  const onReviewUpdate = async (req: UpdateReviewRequest, toast: any) => {
     try {
-      if (!file) {
-        toast({
-          title: "Error",
-          description: "No file selected",
-          status: "error",
-          duration: 4000,
-        });
-        return;
-      }
-
-      setUploadState(UploadState.FetchingPresignedUrl);
-      const uploadUrl = await getUploadUrl(
-        props.auth.getIdToken(),
-        props.match.params.reviewId
+      const newReview = await patchReview(
+        getToken(),
+        props.match.params.reviewId,
+        req
       );
-
-      setUploadState(UploadState.UploadingFile);
-      await uploadFile(uploadUrl, file);
-
       toast({
-        title: "File Uploaded",
-        description: "File was uploaded successfully",
+        title: "Mobile review update",
+        description: "Mobile review was updated successfully",
         status: "success",
         duration: 2000,
       });
-    } catch (e) {
+      return newReview;
+    } catch {
       toast({
-        title: "Error",
-        description: "Could not upload a file: " + e.message,
+        title: "Updated failed",
+        description: "Mobile review update failed",
         status: "error",
         duration: 4000,
-      });      
-    } finally {
-      setUploadState(UploadState.NoUpload);
+      });
     }
   };
 
-  const renderButton = () => {
-    return (
-      <div>
-        {uploadState === UploadState.FetchingPresignedUrl && (
-          <p>Uploading image metadata</p>
-        )}
-        {uploadState === UploadState.UploadingFile && <p>Uploading file</p>}
-        <Button loading={uploadState !== UploadState.NoUpload} type="submit">
-          Upload
-        </Button>
-      </div>
-    );
+  const getToken = () => {
+    return props.auth.getIdToken();
   };
 
   return (
-    <div>
-      <h1>Upload new image</h1>
+    <SelectedReview.Consumer>
+      {(context: any) => (
+        <div>
+          <Flex>
+            <Box>
+              <Formik
+                initialValues={{
+                  title: context.review.title,
+                  brand: context.review.brand,
+                  review: context.review.review,
+                  range: context.review.range,
+                  price: context.review.price,
+                }}
+                validationSchema={Yup.object({
+                  range: Yup.string().required("Required"),
+                  price: Yup.number().positive().required("Required"),
+                  review: Yup.string()
+                    .min(50, "Must be 50 characters or more")
+                    .required("Required"),
+                })}
+                onSubmit={(values, { setSubmitting, resetForm }) => {
+                  setTimeout(async () => {
+                    let req: any = {};
+                    req.price = parseInt(values.price.toString());
+                    req.range = values.range;
+                    req.review = values.review;
+                    await onReviewUpdate(req, toast);
 
-      <Form onSubmit={handleSubmit}>
-        <Form.Field>
-          <label>File</label>
-          <input
-            type="file"
-            accept="image/*"
-            placeholder="Image to upload"
-            onChange={handleFileChange}
-          />
-        </Form.Field>
+                    // update context object
+                    context.review.review = values.review;
+                    context.review.price = values.price;
+                    context.review.range = values.range;
 
-        {renderButton()}
-      </Form>
-    </div>
+                    history.push(`/`);
+
+                    //setSubmitting(false);
+                  }, 400);
+                }}
+              >
+                {({ values, handleSubmit }) => (
+                  <form onSubmit={handleSubmit}>
+                    <Box borderWidth="1px" rounded="lg">
+                      <Grid
+                        w="100%"
+                        templateColumns="repeat(auto-fit, minmax(300px, 1fr))"
+                        gap={2}
+                      >
+                        <Heading>Edit Mobile Review</Heading>
+
+                        <Text><b>{values.title}</b></Text>
+                        <label htmlFor="review">Brief Review</label>
+                        <Field
+                          as="textarea"
+                          name="review"
+                          rows="4" 
+                          value={values.review}
+                        />
+                        <ErrorMessage name="review" render={showError} />
+
+                        <label htmlFor="range">Range</label>
+                        <Field name="range" as="select" value={values.range}>
+                          <option>Low</option>
+                          <option>Mid</option>
+                          <option>High</option>
+                        </Field>
+                        <ErrorMessage name="range" render={showError} />
+
+                        <label htmlFor="price">Price</label>
+                        <Field name="price" value={values.price} />
+                        <ErrorMessage name="price" render={showError} />
+
+                        <Button type="submit" variantColor="green">Update Review</Button>
+                      </Grid>
+                    </Box>
+                  </form>
+                )}
+              </Formik>
+            </Box>
+          </Flex>
+        </div>
+      )}
+    </SelectedReview.Consumer>
   );
 };
 

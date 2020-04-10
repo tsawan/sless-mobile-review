@@ -3,12 +3,14 @@ import { Link, Route, Router, Switch } from "react-router-dom";
 import { Grid, Menu, Segment } from "semantic-ui-react";
 
 import Auth from "./auth/Auth";
-import  EditReview  from "./components/EditReview";
+import  AttachImage  from "./components/AttachImage";
 import CreateReview from "./components/CreateReview";
+import EditReview from "./components/EditReview";
 import { LogIn } from "./components/LogIn";
 import { NotFound } from "./components/NotFound";
 import  ReviewsList  from "./components/ReviewsList";
 import {ThemeProvider, theme} from "@chakra-ui/core"
+import SelectedReviewProvider from './components/SelectedReviewProvider';
 
 export interface AppProps {}
 
@@ -37,6 +39,7 @@ export default class App extends Component<AppProps, AppState> {
 
   render() {
     return (
+      <SelectedReviewProvider>
       <ThemeProvider theme={theme}>
       <div>
         <Segment style={{ padding: "8em 0em" }} vertical>
@@ -54,6 +57,7 @@ export default class App extends Component<AppProps, AppState> {
         </Segment>
       </div>
       </ThemeProvider>
+      </SelectedReviewProvider>
     );
   }
 
@@ -105,6 +109,14 @@ export default class App extends Component<AppProps, AppState> {
           exact
           render={(props) => {
             return <CreateReview {...props} auth={this.props.auth} />;
+          }}
+        />
+
+        <Route
+          path="/reviews/:reviewId/attach"
+          exact
+          render={(props) => {
+            return <AttachImage {...props} auth={this.props.auth} />;
           }}
         />
 

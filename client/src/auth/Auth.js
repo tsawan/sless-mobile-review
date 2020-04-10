@@ -1,14 +1,19 @@
 import auth0 from 'auth0-js';
 import { authConfig } from '../config';
 
-const NO_AUTH = true;
+// set this flag to true and add tokens from auth0 to 
+// run the application with fixed auth session.
+// this will speed up the development by avoiding login
+const NO_AUTH = false;
+
+const _ACCESS_TOKEN = "";
+const _ID_TOKEN = "";
 
 export default class Auth {
   accessToken;
   idToken;
   expiresAt;
   auth0;
-
 
   constructor(history) {
     this.history = history
@@ -22,8 +27,8 @@ export default class Auth {
     this.renewSession = this.renewSession.bind(this);
 
     if (NO_AUTH) {
-      this.accessToken = "HRCTPyDoyz95Dkz41AUctM1YH7qiHv4k"
-      this.idToken = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlEwTTVPRFZGTVRBek5qbEZORU16UTBJM05UWkdOelJGTkRFMk1EUTFPRE14T0RGRE9EazVRdyJ9.eyJpc3MiOiJodHRwczovL3RhaGlyLXNsZXNzLmF1dGgwLmNvbS8iLCJzdWIiOiJnb29nbGUtb2F1dGgyfDExNDIzOTMxOTE0NTI4OTAzMzIzNSIsImF1ZCI6ImN3dlFaYUtSYUdjMmRQTUhiRTNEOWN4SmlMNkxOSnZiIiwiaWF0IjoxNTg2NDU3MDA2LCJleHAiOjE1ODY0OTMwMDYsImF0X2hhc2giOiI3dUlIWml4UXF4SndsdEM1ZmVxTUhnIiwibm9uY2UiOiI5MzJxeFN0bGh1QX5SYnAyUVlSYVRLVHlJMERpVWtDfiJ9.WJCiaZt3PsUFeYtqcnskv5gG8zr1Pa3VwZ3doArlDOVHgPA4dGDOwilcGV40cBP7LlkyE2O9Gn6Yd0sJI_pxhMAKv8tZEJEYm4l88WEk6S7PFUs3iF3mHwfuYMQ0Uey1_A8d77Wx1kMbuw7H3AupET2pn8UOt6Jg5prJ5vS5LqlYWOI93ZsRAB6fl0Y1ZGfaoqJ6zvZsCTp5st5vQ5_fxK7oDcBrKqV7-pxutQVIKmTxcQza4NHXJKTqHu03JskGkLenQ2qi4GwO_mDRAqqShQKkdY0sqaIGqUXxqlZXZeSKYoo0DlpJOHJVZcWaieYuF_QPsWyrx0H9ShBcRPdJsQ"
+      this.accessToken = _ACCESS_TOKEN
+      this.idToken = _ID_TOKEN
     }
     else {
       this.auth0 = new auth0.WebAuth({
